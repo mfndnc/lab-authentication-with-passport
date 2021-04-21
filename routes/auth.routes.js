@@ -22,6 +22,7 @@ router.get('/signup', (req, res) => {
 router.post('/signup', (req, res, next) => {
   // get username and password
   const { username, password } = req.body;
+  console.log('signup POST', username);
   if (!password || !username) {
     return res.render('auth/signup', {
       message: 'Please enter an Username and a Password',
@@ -35,13 +36,15 @@ router.post('/signup', (req, res, next) => {
   }
   User.findOne({ username }).then((user) => {
     if (user) {
-      return res.render('auth/signup', {
+      res.render('auth/signup', {
         message: 'This username is already taken',
       });
+      return;
     } else {
       const salt = bcrypt.genSaltSync();
       const hash = bcrypt.hashSync(password, salt);
       User.create({ username, password: hash }).then((createdUser) => {
+        console.log('createdUser', createdUser);
         req.login(createdUser, (err) => {
           if (err) {
             next(err);
@@ -102,10 +105,8 @@ router.get(
 router.get('/auth/slack', passport.authenticate('slack'));
 router.get(
   '/auth/slack/callback',
-  passport.authenticate('slack', {
-    successRedirect: '/',
-    failureRedirect: '/login',
-  })
+  passport.authorize('slack', { failureRedirect: '/login' }),
+  (req, res) => res.redirect('/')
 );
 
 module.exports = router;

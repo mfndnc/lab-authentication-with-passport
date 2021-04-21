@@ -168,6 +168,13 @@ passport.use(
     {
       clientID: process.env.SLACK_ID,
       clientSecret: process.env.SLACK_SECRET,
+      skipUserProfile: false, // default
+      scope: [
+        'identity.basic',
+        'identity.email',
+        'identity.avatar',
+        'identity.team',
+      ],
       callbackURL: '/auth/slack/callback',
     },
     (accessToken, refreshToken, profile, done) => {
