@@ -119,3 +119,8 @@ router.get(
 );
 
 module.exports = router;
+
+// some interesting notes
+// consider adding connect-flash instead - for showing error messages
+// check req.isAuthenticated
+// passport.authenticate -> failureFlash if using package connect-flash

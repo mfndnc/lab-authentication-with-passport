@@ -55,40 +55,9 @@ app.use(favicon(path.join(__dirname, 'public', 'images', 'favicon.ico')));
 
 /*
  ******
- ****** for sessions in local
- ******
- */
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET,
-    cookie: { maxAge: 1000 * 60 * 60 * 24 },
-    saveUninitialized: false,
-    resave: true,
-    store: MongoStore.create({
-      mongoUrl: DB_URL,
-    }),
-  })
-);
-
-/*
- ******
  ****** for local authentication
  ******
  */
-passport.serializeUser((user, done) => {
-  done(null, user._id);
-});
-
-// this is used to retrieve the user by it's id (that is stored in the session)
-passport.deserializeUser((id, done) => {
-  User.findById(id)
-    .then((dbUser) => {
-      done(null, dbUser);
-    })
-    .catch((err) => {
-      done(err);
-    });
-});
 
 passport.use(
   new LocalStrategy((username, password, done) => {
@@ -113,9 +82,6 @@ passport.use(
       });
   })
 );
-
-app.use(passport.initialize());
-app.use(passport.session());
 
 /*
  ******
@@ -215,6 +181,41 @@ passport.use(
 // twitter require registration and that I give a phone number
 // Slack is now more complicated to set up and I did not understand the steps
 // amazon has a 8 steps requirement for website authentication
+
+/*
+ ******
+ ****** saving sessions in local
+ ******
+ */
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    cookie: { maxAge: 1000 * 60 * 60 * 24 },
+    saveUninitialized: false,
+    resave: true,
+    store: MongoStore.create({
+      mongoUrl: DB_URL,
+    }),
+  })
+);
+
+passport.serializeUser((user, done) => {
+  done(null, user._id);
+});
+
+// this is used to retrieve the user by it's id (that is stored in the session)
+passport.deserializeUser((id, done) => {
+  User.findById(id)
+    .then((dbUser) => {
+      done(null, dbUser);
+    })
+    .catch((err) => {
+      done(err);
+    });
+});
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 /*
  ******
