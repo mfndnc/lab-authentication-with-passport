@@ -14,11 +14,11 @@ const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const User = require('./models/User.model');
 const passport = require('passport');
-const LocalStrategy = require('passport-local').Strategy;
-const SlackStrategy = require('passport-slack').Strategy;
 const bcrypt = require('bcrypt');
 
-var GitHubStrategy = require('passport-github2').Strategy;
+const LocalStrategy = require('passport-local').Strategy;
+const SlackStrategy = require('passport-slack-oauth2').Strategy;
+const GitHubStrategy = require('passport-github2').Strategy;
 // ******* for authentication END
 
 const DB_URL = 'mongodb://localhost/auth-with-passport';
@@ -63,7 +63,7 @@ passport.use(
   new LocalStrategy((username, password, done) => {
     // this logic will be executed when we log in
     console.log('LocalStrategy', username);
-    User.findOne({ username: username })
+    User.findOne({ username })
       .then((userFromDB) => {
         console.log('LocalStrategy findOne', userFromDB.username);
         if (userFromDB === null) {
@@ -78,7 +78,9 @@ passport.use(
         }
       })
       .catch((err) => {
-        next(err);
+        // this is NOT working
+        //done(err);
+        done(err, false, { message: 'Wrong Credentials' });
       });
   })
 );
@@ -109,7 +111,7 @@ passport.use(
             User.create({
               externalSource: 'GitHub',
               externalId: profile.id,
-              username: profile.username,
+              username: profile.username || 'unknown',
               image: profile._json.avatar_url || '',
               email: profile.email || '',
             }).then((user) => {
@@ -135,42 +137,43 @@ passport.use(
       clientID: process.env.SLACK_ID,
       clientSecret: process.env.SLACK_SECRET,
       skipUserProfile: false, // default
-      scope: [
-        'identity.basic',
-        'identity.email',
-        'identity.avatar',
-        'identity.team',
-      ],
-      callbackURL: '/auth/slack/callback',
+      scope: ['identity.basic', 'identity.email', 'identity.avatar'],
+      callbackURL: 'http://127.0.0.1:3000/auth/slack/callback',
     },
     (accessToken, refreshToken, profile, done) => {
-      // to see the structure of the data in received response:
       console.log('Slack account details:', profile);
 
       User.findOne({ externalSource: 'Slack', externalId: profile.id })
         .then((user) => {
           console.log('Slack findOne', user);
-          if (user) {
-            done(null, user);
-            return;
-          }
 
-          User.create({
-            externalSource: 'Slack',
-            externalId: profile.id,
-            username: profile.username,
-            image: profile._json.avatar_url || '',
-            email: profile.email || '',
-          })
-            .then((newUser) => {
-              done(null, newUser);
-            })
-            .catch((err) => done(err)); // closes User.create()
+          if (user !== null) {
+            done(null, user);
+          } else {
+            User.create({
+              externalSource: 'Slack',
+              externalId: profile.id,
+              username: profile.displayName || 'unknown',
+              image: profile.user.image_512 || '',
+              email: profile.user.email || '',
+            }).then((user) => {
+              done(null, user);
+            });
+          }
         })
-        .catch((err) => done(err)); // closes User.findOne()
+        .catch((err) => {
+          done(err);
+        });
     }
   )
 );
+
+/*
+User log in, is identified, created in collection or retrieved if relogged in
+the session gets created but the user is not considered logged
+I suspect it has to do with this:
+https://api.slack.com/docs/sign-in-with-slack#implementation__token-negotiation-flow
+*/
 
 /*
  ******
@@ -179,7 +182,6 @@ passport.use(
  */
 
 // twitter require registration and that I give a phone number
-// Slack is now more complicated to set up and I did not understand the steps
 // amazon has a 8 steps requirement for website authentication
 
 /*

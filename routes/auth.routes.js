@@ -111,10 +111,10 @@ router.get(
 
 // Slack login
 
-router.get('/auth/slack', passport.authenticate('slack'));
+router.get('/auth/slack', passport.authenticate('Slack'));
 router.get(
   '/auth/slack/callback',
-  passport.authorize('slack', { failureRedirect: '/login' }),
+  passport.authorize('Slack', { failureRedirect: '/login' }),
   (req, res) => res.redirect('/')
 );
 
