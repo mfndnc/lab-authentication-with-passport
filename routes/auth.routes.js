@@ -45,7 +45,7 @@ router.post('/signup', (req, res, next) => {
       const hash = bcrypt.hashSync(password, salt);
       User.create({ username, password: hash }).then((createdUser) => {
         console.log('createdUser', createdUser);
-        /*
+
         req.login(createdUser, (err) => {
           if (err) {
             next(err);
@@ -53,16 +53,6 @@ router.post('/signup', (req, res, next) => {
             res.redirect('/');
           }
         });
-
-node:internal/process/promises:245
-          triggerUncaughtException(err, true // fromPromise //);
-Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client
-
-
-
-        */
-        // redirect to login
-        res.redirect('/login');
       });
     }
   });
