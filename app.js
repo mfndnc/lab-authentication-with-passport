@@ -21,7 +21,8 @@ const SlackStrategy = require('passport-slack-oauth2').Strategy;
 const GitHubStrategy = require('passport-github2').Strategy;
 // ******* for authentication END
 
-const DB_URL = 'mongodb://localhost/auth-with-passport';
+const DB_URL =
+  process.env.MONGO_URL || 'mongodb://localhost/auth-with-passport';
 
 mongoose
   .connect(DB_URL, {
